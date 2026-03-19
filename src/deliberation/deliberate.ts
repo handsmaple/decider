@@ -140,6 +140,84 @@ export async function deliberate(
   };
 }
 
+// ── Streaming variant ──────────────────────────────────────────────
+
+export interface StreamCallbacks {
+  onPersona?: (result: PersonaResponse) => void;
+  onFailed?: (result: FailedPersona) => void;
+}
+
+/**
+ * Like `deliberate()`, but calls `callbacks.onPersona` / `callbacks.onFailed`
+ * as each persona settles rather than waiting for all to finish first.
+ * Returns the same `DeliberationResult` shape when everything is done.
+ */
+export async function deliberateStream(
+  question: string,
+  callbacks: StreamCallbacks,
+  options: DeliberationOptions = {},
+): Promise<DeliberationResult> {
+  const {
+    panelSize = 5,
+    maxTokensPerPersona = 256,
+    model = DEFAULT_MODEL,
+    timeoutMs,
+    seed,
+    includeSynthesis = true,
+  } = options;
+
+  const start = performance.now();
+  const panel = selectPanel(question, panelSize, seed);
+  const cfg: ApiCallConfig = { model, timeoutMs };
+
+  // Attach callbacks to each promise so results stream out as they settle
+  const promises = panel.map((persona) =>
+    callPersona(persona, question, maxTokensPerPersona, cfg)
+      .then((result) => {
+        callbacks.onPersona?.(result);
+        return result;
+      })
+      .catch((err: unknown) => {
+        const failed: FailedPersona = {
+          persona,
+          error: err instanceof Error ? err.message : String(err),
+        };
+        callbacks.onFailed?.(failed);
+        throw err;
+      }),
+  );
+
+  const settled = await Promise.allSettled(promises);
+
+  const responses: PersonaResponse[] = [];
+  const failed: FailedPersona[] = [];
+
+  // Callbacks already fired per-persona above; here we just collect for the return value
+  for (const [i, result] of settled.entries()) {
+    if (result.status === 'fulfilled') {
+      responses.push(result.value);
+    } else {
+      failed.push({
+        persona: panel[i]!,
+        error: result.reason instanceof Error ? result.reason.message : String(result.reason),
+      });
+    }
+  }
+
+  const synthesis =
+    includeSynthesis && responses.length >= 2
+      ? await synthesize(question, responses, cfg)
+      : null;
+
+  return {
+    question,
+    responses,
+    failed,
+    synthesis,
+    durationMs: Math.round(performance.now() - start),
+  };
+}
+
 // ── Internal ───────────────────────────────────────────────────────
 
 interface ApiCallConfig {
