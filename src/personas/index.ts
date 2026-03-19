@@ -1,4 +1,5 @@
 export { PERSONAS } from './personas.js';
+// distribution.ts is a CLI-only script and is intentionally not re-exported here
 export type {
   Persona,
   PersonaDimensions,

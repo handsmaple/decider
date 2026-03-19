@@ -621,4 +621,4 @@ export const PERSONAS: readonly Persona[] = [
       education: 'some_college',
     },
   },
-] as const;
+];

@@ -1,48 +1,65 @@
-// ── Dimension Value Types ──────────────────────────────────────────
+// ── Dimension Value Arrays (source of truth) ───────────────────────
+// Types are derived from arrays — edit the array, the type updates automatically.
 
-export type AgeGroup = 'young_adult' | 'adult' | 'middle_aged' | 'senior';
+export const AGE_GROUPS = [
+  'young_adult',
+  'adult',
+  'middle_aged',
+  'senior',
+] as const;
+export type AgeGroup = (typeof AGE_GROUPS)[number];
 
-export type Geography =
-  | 'north_american'
-  | 'european'
-  | 'east_asian'
-  | 'south_asian'
-  | 'latin_american'
-  | 'middle_eastern'
-  | 'african';
+export const GEOGRAPHIES = [
+  'north_american',
+  'european',
+  'east_asian',
+  'south_asian',
+  'latin_american',
+  'middle_eastern',
+  'african',
+] as const;
+export type Geography = (typeof GEOGRAPHIES)[number];
 
-export type Worldview =
-  | 'progressive'
-  | 'conservative'
-  | 'libertarian'
-  | 'centrist'
-  | 'communitarian';
+export const WORLDVIEWS = [
+  'progressive',
+  'conservative',
+  'libertarian',
+  'centrist',
+  'communitarian',
+] as const;
+export type Worldview = (typeof WORLDVIEWS)[number];
 
-export type Interest =
-  | 'technology'
-  | 'arts_culture'
-  | 'sports_fitness'
-  | 'nature_environment'
-  | 'business_finance'
-  | 'science'
-  | 'spirituality'
-  | 'family_community';
+export const INTERESTS = [
+  'technology',
+  'arts_culture',
+  'sports_fitness',
+  'nature_environment',
+  'business_finance',
+  'science',
+  'spirituality',
+  'family_community',
+] as const;
+export type Interest = (typeof INTERESTS)[number];
 
-export type JobStatus =
-  | 'student'
-  | 'corporate_professional'
-  | 'entrepreneur'
-  | 'creative_artist'
-  | 'trades_worker'
-  | 'academic_researcher'
-  | 'retired'
-  | 'public_servant';
+export const JOB_STATUSES = [
+  'student',
+  'corporate_professional',
+  'entrepreneur',
+  'creative_artist',
+  'trades_worker',
+  'academic_researcher',
+  'retired',
+  'public_servant',
+] as const;
+export type JobStatus = (typeof JOB_STATUSES)[number];
 
-export type EducationLevel =
-  | 'high_school'
-  | 'some_college'
-  | 'bachelors'
-  | 'graduate_professional';
+export const EDUCATION_LEVELS = [
+  'high_school',
+  'some_college',
+  'bachelors',
+  'graduate_professional',
+] as const;
+export type EducationLevel = (typeof EDUCATION_LEVELS)[number];
 
 // ── Persona Definition ─────────────────────────────────────────────
 
@@ -61,65 +78,19 @@ export interface Persona {
   dimensions: PersonaDimensions;
 }
 
-// ── Dimension Metadata (for UI labels, distribution tracking, etc.) ─
-
-export const AGE_GROUPS: readonly AgeGroup[] = [
-  'young_adult',
-  'adult',
-  'middle_aged',
-  'senior',
-] as const;
-
-export const GEOGRAPHIES: readonly Geography[] = [
-  'north_american',
-  'european',
-  'east_asian',
-  'south_asian',
-  'latin_american',
-  'middle_eastern',
-  'african',
-] as const;
-
-export const WORLDVIEWS: readonly Worldview[] = [
-  'progressive',
-  'conservative',
-  'libertarian',
-  'centrist',
-  'communitarian',
-] as const;
-
-export const INTERESTS: readonly Interest[] = [
-  'technology',
-  'arts_culture',
-  'sports_fitness',
-  'nature_environment',
-  'business_finance',
-  'science',
-  'spirituality',
-  'family_community',
-] as const;
-
-export const JOB_STATUSES: readonly JobStatus[] = [
-  'student',
-  'corporate_professional',
-  'entrepreneur',
-  'creative_artist',
-  'trades_worker',
-  'academic_researcher',
-  'retired',
-  'public_servant',
-] as const;
-
-export const EDUCATION_LEVELS: readonly EducationLevel[] = [
-  'high_school',
-  'some_college',
-  'bachelors',
-  'graduate_professional',
-] as const;
-
 // ── Display Labels ──────────────────────────────────────────────────
+// Typed as a mapped object — adding a new union member without a label is a compile error.
 
-export const DIMENSION_LABELS: Record<string, Record<string, string>> = {
+type DimensionLabels = {
+  age: Record<AgeGroup, string>;
+  geography: Record<Geography, string>;
+  worldview: Record<Worldview, string>;
+  interests: Record<Interest, string>;
+  job: Record<JobStatus, string>;
+  education: Record<EducationLevel, string>;
+};
+
+export const DIMENSION_LABELS: DimensionLabels = {
   age: {
     young_adult: '18–25',
     adult: '26–40',
