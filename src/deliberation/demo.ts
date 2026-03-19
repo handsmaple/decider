@@ -15,16 +15,31 @@ async function main() {
 
   for (const r of result.responses) {
     const d = r.persona.dimensions;
+    // Worldview leads — it is the most predictive signal for a given response
     const tags = [
-      DIMENSION_LABELS.age[d.age],
-      DIMENSION_LABELS.geography[d.geography],
       DIMENSION_LABELS.worldview[d.worldview],
       DIMENSION_LABELS.job[d.job],
+      DIMENSION_LABELS.geography[d.geography],
+      DIMENSION_LABELS.age[d.age],
     ].join(' · ');
 
     console.log(`▶ ${r.persona.label}`);
     console.log(`  ${tags}`);
     console.log(`  ${r.response}\n`);
+  }
+
+  if (result.failed.length > 0) {
+    console.log(`⚠ ${result.failed.length} persona(s) failed:`);
+    for (const f of result.failed) {
+      console.log(`  ${f.persona.label}: ${f.error}`);
+    }
+    console.log();
+  }
+
+  if (result.synthesis) {
+    console.log('── Synthesis ' + '─'.repeat(48));
+    console.log(result.synthesis);
+    console.log();
   }
 
   const totalTokens = result.responses.reduce(
@@ -34,7 +49,7 @@ async function main() {
 
   console.log('─'.repeat(60));
   console.log(
-    `${result.responses.length} personas · ${result.durationMs}ms wall-clock · ${totalTokens} total tokens`,
+    `${result.responses.length} personas · ${result.durationMs}ms wall-clock · ${totalTokens} tokens`,
   );
 }
 
