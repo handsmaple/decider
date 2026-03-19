@@ -37,7 +37,7 @@ function countDistribution() {
     const labels = DIMENSION_LABELS[dim];
     console.log(`── ${dim.toUpperCase()} ──`);
     for (const [value, count] of Object.entries(valueCounts).sort((a, b) => b[1] - a[1])) {
-      const label = labels[value as keyof typeof labels];
+      const label = (labels as Record<string, string>)[value] ?? value;
       const pct = ((count / total) * 100).toFixed(1);
       console.log(`  ${label.padEnd(28)} ${String(count).padStart(3)}  (${pct}%)`);
     }

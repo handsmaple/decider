@@ -4,6 +4,13 @@
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "deliberate": "npx tsx src/deliberation/demo.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.54.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0"
   }
 }
