@@ -3,6 +3,10 @@ import type { Persona } from '../personas/index.js';
 import { selectPanel } from './select.js';
 import { buildPersonaPrompt } from './prompt.js';
 
+// ── Constants ──────────────────────────────────────────────────────
+
+const DEFAULT_MODEL = 'claude-opus-4-6';
+
 // ── Types ──────────────────────────────────────────────────────────
 
 export interface PersonaResponse {
@@ -16,9 +20,8 @@ export interface PersonaResponse {
 
 export interface DeliberationResult {
   question: string;
-  panelSize: number;
   responses: PersonaResponse[];
-  /** Wall-clock time for all parallel calls, in milliseconds */
+  /** Wall-clock duration covering panel selection + all parallel API calls, in milliseconds */
   durationMs: number;
 }
 
@@ -30,6 +33,10 @@ export interface DeliberationOptions {
    * Keep this low — each persona should be concise (default: 512).
    */
   maxTokensPerPersona?: number;
+  /** Model to use for all persona calls (default: claude-opus-4-6) */
+  model?: string;
+  /** Per-request timeout in milliseconds (default: SDK default of 10 min) */
+  timeoutMs?: number;
 }
 
 // ── Core ───────────────────────────────────────────────────────────
@@ -58,21 +65,27 @@ export async function deliberate(
   question: string,
   options: DeliberationOptions = {},
 ): Promise<DeliberationResult> {
-  const { panelSize = 5, maxTokensPerPersona = 512 } = options;
+  const {
+    panelSize = 5,
+    maxTokensPerPersona = 512,
+    model = DEFAULT_MODEL,
+    timeoutMs,
+  } = options;
 
+  const start = performance.now();
   const panel = selectPanel(question, panelSize);
-  const start = Date.now();
 
   // Fan out — all persona calls run in parallel
   const responses = await Promise.all(
-    panel.map((persona) => callPersona(persona, question, maxTokensPerPersona)),
+    panel.map((persona) =>
+      callPersona(persona, question, maxTokensPerPersona, model, timeoutMs),
+    ),
   );
 
   return {
     question,
-    panelSize,
     responses,
-    durationMs: Date.now() - start,
+    durationMs: Math.round(performance.now() - start),
   };
 }
 
@@ -82,13 +95,18 @@ async function callPersona(
   persona: Persona,
   question: string,
   maxTokens: number,
+  model: string,
+  timeoutMs: number | undefined,
 ): Promise<PersonaResponse> {
-  const message = await client.messages.create({
-    model: 'claude-opus-4-6',
-    max_tokens: maxTokens,
-    system: buildPersonaPrompt(persona),
-    messages: [{ role: 'user', content: question }],
-  });
+  const message = await client.messages.create(
+    {
+      model,
+      max_tokens: maxTokens,
+      system: buildPersonaPrompt(persona),
+      messages: [{ role: 'user', content: question }],
+    },
+    timeoutMs !== undefined ? { timeout: timeoutMs } : undefined,
+  );
 
   const response = message.content
     .filter((b): b is Anthropic.TextBlock => b.type === 'text')

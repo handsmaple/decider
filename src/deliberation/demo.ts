@@ -11,7 +11,7 @@ async function main() {
 
   console.log(`\nQuestion: "${question}"\n${'─'.repeat(60)}\n`);
 
-  const result = await deliberate(question, { panelSize: 5 });
+  const result = await deliberate(question);
 
   for (const r of result.responses) {
     const d = r.persona.dimensions;
@@ -34,7 +34,7 @@ async function main() {
 
   console.log('─'.repeat(60));
   console.log(
-    `${result.panelSize} personas · ${result.durationMs}ms wall-clock · ${totalTokens} total tokens`,
+    `${result.responses.length} personas · ${result.durationMs}ms wall-clock · ${totalTokens} total tokens`,
   );
 }
 

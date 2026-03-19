@@ -1,5 +1,4 @@
-import { DIMENSION_LABELS } from '../personas/index.js';
-import type { Persona } from '../personas/index.js';
+import { DIMENSION_LABELS, type Persona } from '../personas/index.js';
 
 /**
  * Build the system prompt that locks a Claude instance into a given persona.
@@ -12,9 +11,10 @@ export function buildPersonaPrompt(persona: Persona): string {
   const { dimensions } = persona;
   const L = DIMENSION_LABELS;
 
-  const interestList = dimensions.interests
-    .map((i) => L.interests[i])
-    .join(' and ');
+  const interestList =
+    dimensions.interests.length > 0
+      ? dimensions.interests.map((i) => L.interests[i]).join(' and ')
+      : 'general curiosity';
 
   return `\
 You are a real person with the following background:

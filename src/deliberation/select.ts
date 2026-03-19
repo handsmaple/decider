@@ -1,5 +1,4 @@
-import { PERSONAS } from '../personas/index.js';
-import type { Persona } from '../personas/index.js';
+import { PERSONAS, type Persona } from '../personas/index.js';
 
 /**
  * Deterministic pseudo-random number generator (mulberry32).
