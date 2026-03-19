@@ -18,12 +18,17 @@ export interface PersonaResponse {
   outputTokens: number;
 }
 
+export interface FailedPersona {
+  persona: Persona;
+  error: string;
+}
+
 export interface DeliberationResult {
   question: string;
   /** Successfully completed persona responses */
   responses: PersonaResponse[];
   /** Persona calls that failed (transient errors, rate limits, etc.) */
-  failed: Array<{ persona: Persona; error: string }>;
+  failed: FailedPersona[];
   /**
    * AI-generated synthesis of the panel's responses.
    * Null if fewer than 2 personas succeeded (not enough to synthesize).
@@ -100,19 +105,17 @@ export async function deliberate(
 
   const start = performance.now();
   const panel = selectPanel(question, panelSize, seed);
+  const cfg: ApiCallConfig = { model, timeoutMs };
 
   // Fan out — all persona calls run in parallel; partial failures are tolerated
   const settled = await Promise.allSettled(
-    panel.map((persona) =>
-      callPersona(persona, question, maxTokensPerPersona, model, timeoutMs),
-    ),
+    panel.map((persona) => callPersona(persona, question, maxTokensPerPersona, cfg)),
   );
 
   const responses: PersonaResponse[] = [];
-  const failed: Array<{ persona: Persona; error: string }> = [];
+  const failed: FailedPersona[] = [];
 
-  for (let i = 0; i < settled.length; i++) {
-    const result = settled[i]!;
+  for (const [i, result] of settled.entries()) {
     if (result.status === 'fulfilled') {
       responses.push(result.value);
     } else {
@@ -125,7 +128,7 @@ export async function deliberate(
 
   const synthesis =
     includeSynthesis && responses.length >= 2
-      ? await synthesize(question, responses, model, timeoutMs)
+      ? await synthesize(question, responses, cfg)
       : null;
 
   return {
@@ -139,12 +142,27 @@ export async function deliberate(
 
 // ── Internal ───────────────────────────────────────────────────────
 
+interface ApiCallConfig {
+  model: string;
+  timeoutMs: number | undefined;
+}
+
+function requestOptions(timeoutMs: number | undefined): { timeout: number } | undefined {
+  return timeoutMs !== undefined ? { timeout: timeoutMs } : undefined;
+}
+
+function extractText(content: Anthropic.ContentBlock[]): string {
+  return content
+    .filter((b): b is Anthropic.TextBlock => b.type === 'text')
+    .map((b) => b.text)
+    .join('');
+}
+
 async function callPersona(
   persona: Persona,
   question: string,
   maxTokens: number,
-  model: string,
-  timeoutMs: number | undefined,
+  { model, timeoutMs }: ApiCallConfig,
 ): Promise<PersonaResponse> {
   const message = await client.messages.create(
     {
@@ -153,17 +171,12 @@ async function callPersona(
       system: buildPersonaPrompt(persona),
       messages: [{ role: 'user', content: question }],
     },
-    timeoutMs !== undefined ? { timeout: timeoutMs } : undefined,
+    requestOptions(timeoutMs),
   );
-
-  const response = message.content
-    .filter((b): b is Anthropic.TextBlock => b.type === 'text')
-    .map((b) => b.text)
-    .join('');
 
   return {
     persona,
-    response,
+    response: extractText(message.content),
     inputTokens: message.usage.input_tokens,
     outputTokens: message.usage.output_tokens,
   };
@@ -172,8 +185,7 @@ async function callPersona(
 async function synthesize(
   question: string,
   responses: PersonaResponse[],
-  model: string,
-  timeoutMs: number | undefined,
+  { model, timeoutMs }: ApiCallConfig,
 ): Promise<string | null> {
   const panel = responses
     .map((r) => `[${r.persona.label}]:\n${r.response}`)
@@ -183,6 +195,8 @@ async function synthesize(
     {
       model,
       max_tokens: 300,
+      system:
+        'You are a neutral analyst synthesizing a diverse panel of perspectives. Be specific, direct, and reference the actual views expressed. No hedging.',
       messages: [
         {
           role: 'user',
@@ -195,19 +209,12 @@ ${panel}
 In exactly 3 bullet points, synthesize this panel's response:
 • Where they agree (or what assumptions they share)
 • Where they genuinely split, and the core reason why
-• The sharpest tension or trade-off the asker should sit with
-
-Be specific and direct. Reference their actual views. No hedging.`,
+• The sharpest tension or trade-off the asker should sit with`,
         },
       ],
     },
-    timeoutMs !== undefined ? { timeout: timeoutMs } : undefined,
+    requestOptions(timeoutMs),
   );
 
-  return (
-    message.content
-      .filter((b): b is Anthropic.TextBlock => b.type === 'text')
-      .map((b) => b.text)
-      .join('') || null
-  );
+  return extractText(message.content) || null;
 }

@@ -1,4 +1,4 @@
-import { PERSONAS, type Persona } from '../personas/index.js';
+import { PERSONAS, WORLDVIEWS, type Persona } from '../personas/index.js';
 
 /**
  * Deterministic pseudo-random number generator (mulberry32).
@@ -52,7 +52,7 @@ function seededShuffle<T>(arr: readonly T[], rand: () => number): T[] {
  * Remaining slots (after diversity is satisfied) are filled in shuffle order.
  */
 function selectWithDiversity(shuffled: readonly Persona[], panelSize: number): Persona[] {
-  const targetWorldviews = Math.min(panelSize, 5); // one per worldview before repeating
+  const targetWorldviews = Math.min(panelSize, WORLDVIEWS.length);
   const seenWorldviews = new Set<string>();
   const priority: Persona[] = [];  // diverse first-picks
   const overflow: Persona[] = [];  // fills remaining slots
@@ -65,7 +65,7 @@ function selectWithDiversity(shuffled: readonly Persona[], panelSize: number): P
     } else {
       overflow.push(persona);
     }
-    if (priority.length + overflow.length >= shuffled.length) break;
+    if (priority.length + overflow.length >= panelSize) break;
   }
 
   return [...priority, ...overflow].slice(0, panelSize);
