@@ -65,8 +65,8 @@ Expose deliberation over HTTP with streaming (SSE) so a UI can consume it
 ### Phase 3 — Parliament Bar ✅
 Visual component showing persona panel composition by dimension (mobile: ParliamentBar + DimensionBreakdown)
 
-### Phase 4 — Reveal + Pie Chart ⬜
-Animated reveal of persona responses + chart breakdown
+### Phase 4 — Reveal + Pie Chart ✅
+Animated reveal of persona responses + chart breakdown (mobile: staggered PersonaCard entrance, animated bar fills, synthesis fade-in)
 
 ### Phase 5 — Stats + Drawer ✅
 Summary stats panel and expandable persona detail drawer (mobile: PersonaCard expand/collapse + stats footer)

@@ -3,6 +3,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   SafeAreaView,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -10,6 +11,14 @@ import {
   View,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+
+const SUGGESTIONS = [
+  'Should cities ban cars from downtown?',
+  'Is remote work better than office work?',
+  'Should voting be mandatory?',
+  'Is social media doing more harm than good?',
+  'Should college education be free?',
+];
 
 interface Props {
   onAsk: (question: string) => void;
@@ -38,6 +47,30 @@ export function HomeScreen({ onAsk }: Props) {
           <Text style={styles.subtitle}>
             Ask a question. A diverse panel of AI personas deliberates.
           </Text>
+
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.suggestionsScroll}
+            contentContainerStyle={styles.suggestionsContent}
+            keyboardShouldPersistTaps="handled"
+          >
+            {SUGGESTIONS.map((s) => (
+              <TouchableOpacity
+                key={s}
+                onPress={() => setQuestion(s)}
+                style={[styles.chip, question === s && styles.chipActive]}
+                activeOpacity={0.7}
+              >
+                <Text
+                  style={[styles.chipText, question === s && styles.chipTextActive]}
+                  numberOfLines={1}
+                >
+                  {s}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
 
           <TextInput
             style={styles.input}
@@ -87,7 +120,34 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#555',
     lineHeight: 22,
-    marginBottom: 36,
+    marginBottom: 20,
+  },
+  suggestionsScroll: {
+    marginBottom: 20,
+  },
+  suggestionsContent: {
+    paddingRight: 8,
+  },
+  chip: {
+    borderWidth: 1,
+    borderColor: '#2a2a2a',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    marginRight: 8,
+    backgroundColor: '#141414',
+    maxWidth: 220,
+  },
+  chipActive: {
+    borderColor: '#4F46E5',
+    backgroundColor: '#1a1830',
+  },
+  chipText: {
+    fontSize: 12,
+    color: '#666',
+  },
+  chipTextActive: {
+    color: '#818cf8',
   },
   input: {
     backgroundColor: '#141414',

@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
+import { Animated } from 'react-native';
 import { useDeliberate } from './src/hooks/useDeliberate';
 import { HomeScreen } from './src/screens/HomeScreen';
 import { ResultsScreen } from './src/screens/ResultsScreen';
@@ -10,20 +11,38 @@ export default function App() {
   const [question, setQuestion] = useState('');
   const { state, deliberate, reset } = useDeliberate();
 
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+
+  /** Fade out → run state update → fade in. */
+  function transition(callback: () => void) {
+    Animated.timing(fadeAnim, { toValue: 0, duration: 180, useNativeDriver: true }).start(() => {
+      callback();
+      Animated.timing(fadeAnim, { toValue: 1, duration: 220, useNativeDriver: true }).start();
+    });
+  }
+
   function handleAsk(q: string) {
-    setQuestion(q);
-    deliberate(q);
-    setScreen('results');
+    transition(() => {
+      setQuestion(q);
+      deliberate(q);
+      setScreen('results');
+    });
   }
 
   function handleReset() {
-    reset();
-    setScreen('home');
+    transition(() => {
+      reset();
+      setScreen('home');
+    });
   }
 
-  if (screen === 'results') {
-    return <ResultsScreen question={question} state={state} onReset={handleReset} />;
-  }
-
-  return <HomeScreen onAsk={handleAsk} />;
+  return (
+    <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
+      {screen === 'results' ? (
+        <ResultsScreen question={question} state={state} onReset={handleReset} />
+      ) : (
+        <HomeScreen onAsk={handleAsk} />
+      )}
+    </Animated.View>
+  );
 }
