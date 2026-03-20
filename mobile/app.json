@@ -10,7 +10,8 @@
       "bundleIdentifier": "com.decider.app"
     },
     "android": {
-      "package": "com.decider.app"
+      "package": "com.decider.app",
+      "softwareKeyboardLayoutMode": "pan"
     },
     "scheme": "decider"
   }

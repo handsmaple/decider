@@ -39,7 +39,12 @@ export default function App() {
   return (
     <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
       {screen === 'results' ? (
-        <ResultsScreen question={question} state={state} onReset={handleReset} />
+        <ResultsScreen
+          question={question}
+          state={state}
+          onReset={handleReset}
+          onRetry={() => deliberate(question)}
+        />
       ) : (
         <HomeScreen onAsk={handleAsk} />
       )}

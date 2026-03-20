@@ -19,9 +19,10 @@ interface Props {
   question: string;
   state: DeliberationState;
   onReset: () => void;
+  onRetry: () => void;
 }
 
-export function ResultsScreen({ question, state, onReset }: Props) {
+export function ResultsScreen({ question, state, onReset, onRetry }: Props) {
   const scrollRef = useRef<ScrollView>(null);
   const isLoading = state.status === 'loading';
 
@@ -53,7 +54,13 @@ export function ResultsScreen({ question, state, onReset }: Props) {
         <TouchableOpacity onPress={onReset} style={styles.backButton} activeOpacity={0.7}>
           <Text style={styles.backText}>← New question</Text>
         </TouchableOpacity>
-        {isLoading && <Text style={styles.navStatus}>Deliberating…</Text>}
+        {isLoading && (
+          <Text style={styles.navStatus}>
+            {state.personas.length > 0
+              ? `${state.personas.length} response${state.personas.length !== 1 ? 's' : ''}…`
+              : 'Deliberating…'}
+          </Text>
+        )}
       </View>
 
       <ScrollView
@@ -75,6 +82,9 @@ export function ResultsScreen({ question, state, onReset }: Props) {
         {state.error && (
           <View style={styles.errorBox}>
             <Text style={styles.errorText}>{state.error}</Text>
+            <TouchableOpacity onPress={onRetry} style={styles.retryButton} activeOpacity={0.7}>
+              <Text style={styles.retryText}>Try again</Text>
+            </TouchableOpacity>
           </View>
         )}
 
@@ -152,6 +162,20 @@ const styles = StyleSheet.create({
     color: '#f87171',
     fontSize: 14,
     lineHeight: 20,
+    marginBottom: 10,
+  },
+  retryButton: {
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: '#f87171',
+    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  retryText: {
+    color: '#f87171',
+    fontSize: 13,
+    fontWeight: '500',
   },
   synthesisCard: {
     backgroundColor: '#0a1628',

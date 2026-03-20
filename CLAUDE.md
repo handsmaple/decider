@@ -74,8 +74,8 @@ Summary stats panel and expandable persona detail drawer (mobile: PersonaCard ex
 ### Phase 6 — Home Page + Tier Gating ⬜
 Landing page, question input, subscription tier enforcement
 
-### Phase 7 — Polish + Mobile ⬜
-Responsive layout, transitions, tier upgrade modal
+### Phase 7 — Polish + Mobile ✅
+Responsive layout, transitions, tier upgrade modal (mobile: screen fade transition, error retry flow, Android keyboard fix, live navbar response count)
 
 ## V1.5 Backlog (post-MVP)
 - Expose `maxTokensSynthesis` as a `DeliberationOptions` field

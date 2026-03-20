@@ -40,7 +40,7 @@ export function HomeScreen({ onAsk }: Props) {
       <StatusBar style="light" />
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <View style={styles.content}>
           <Text style={styles.title}>Decider</Text>
