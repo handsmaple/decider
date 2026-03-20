@@ -38,7 +38,7 @@ A TypeScript library that runs questions through a diverse panel of AI personas 
 - **Runtime:** Node.js
 - **AI:** `@anthropic-ai/sdk` — default model `claude-opus-4-6`
 - **Build:** `tsc` / `tsx` for CLI entry
-- **No UI framework** — pure library; HTTP layer not yet added
+- **No UI framework** — pure library + lightweight HTTP server (`src/server/`)
 
 ## Architecture
 - `src/personas/` — 50 persona definitions + dimension types + distribution tooling
@@ -59,17 +59,17 @@ A TypeScript library that runs questions through a diverse panel of AI personas 
 ### Phase 1 — Core Library ✅
 Persona types, 50 personas, deliberation engine, synthesis, diversity guarantee, graceful failures, re-roll support
 
-### Phase 2 — API Route + SSE ⬜
+### Phase 2 — API Route + SSE ✅
 Expose deliberation over HTTP with streaming (SSE) so a UI can consume it
 
-### Phase 3 — Parliament Bar ⬜
-Visual component showing persona panel composition by dimension
+### Phase 3 — Parliament Bar ✅
+Visual component showing persona panel composition by dimension (mobile: ParliamentBar + DimensionBreakdown)
 
 ### Phase 4 — Reveal + Pie Chart ⬜
 Animated reveal of persona responses + chart breakdown
 
-### Phase 5 — Stats + Drawer ⬜
-Summary stats panel and expandable persona detail drawer
+### Phase 5 — Stats + Drawer ✅
+Summary stats panel and expandable persona detail drawer (mobile: PersonaCard expand/collapse + stats footer)
 
 ### Phase 6 — Home Page + Tier Gating ⬜
 Landing page, question input, subscription tier enforcement
