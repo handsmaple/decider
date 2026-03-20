@@ -1,5 +1,6 @@
 import { useRef, useEffect } from 'react';
 import {
+  Animated,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -24,11 +25,24 @@ export function ResultsScreen({ question, state, onReset }: Props) {
   const scrollRef = useRef<ScrollView>(null);
   const isLoading = state.status === 'loading';
 
+  // Synthesis card: fade + slide up when it first appears
+  const synthesisOpacity = useRef(new Animated.Value(0)).current;
+  const synthesisSlide = useRef(new Animated.Value(10)).current;
+
   useEffect(() => {
     if (state.personas.length > 0 || state.synthesis) {
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50);
     }
   }, [state.personas.length, state.synthesis]);
+
+  useEffect(() => {
+    if (state.synthesis) {
+      Animated.parallel([
+        Animated.timing(synthesisOpacity, { toValue: 1, duration: 420, useNativeDriver: true }),
+        Animated.timing(synthesisSlide, { toValue: 0, duration: 420, useNativeDriver: true }),
+      ]).start();
+    }
+  }, [state.synthesis, synthesisOpacity, synthesisSlide]);
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -52,8 +66,8 @@ export function ResultsScreen({ question, state, onReset }: Props) {
 
         <ParliamentBar personas={state.personas} />
 
-        {state.personas.map((p) => (
-          <PersonaCard key={p.persona} event={p} />
+        {state.personas.map((p, i) => (
+          <PersonaCard key={p.persona} event={p} index={i} />
         ))}
 
         {isLoading && <LoadingDots count={state.personas.length} />}
@@ -65,10 +79,15 @@ export function ResultsScreen({ question, state, onReset }: Props) {
         )}
 
         {state.synthesis && (
-          <View style={styles.synthesisCard}>
+          <Animated.View
+            style={[
+              styles.synthesisCard,
+              { opacity: synthesisOpacity, transform: [{ translateY: synthesisSlide }] },
+            ]}
+          >
             <Text style={styles.synthesisLabel}>SYNTHESIS</Text>
             <Text style={styles.synthesisText}>{state.synthesis}</Text>
-          </View>
+          </Animated.View>
         )}
 
         {state.status === 'done' && <DimensionBreakdown personas={state.personas} />}

@@ -1,4 +1,5 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { useRef, useEffect } from 'react';
+import { Animated, StyleSheet, Text, View } from 'react-native';
 import {
   AGE_LABELS,
   GEOGRAPHY_LABELS,
@@ -63,20 +64,49 @@ function BreakdownRow({ title, counts, total, labelMap, colorMap, order }: Break
     ? order.filter((k) => counts[k] !== undefined).map((k) => [k, counts[k]] as [string, number])
     : Object.entries(counts).sort((a, b) => b[1] - a[1]);
 
+  // One Animated.Value per bar: 0 → 1 (animation progress).
+  // Fixed at first render — DimensionBreakdown only mounts once (status === 'done').
+  const anims = useRef(entries.map(() => new Animated.Value(0))).current;
+
+  useEffect(() => {
+    Animated.stagger(
+      70,
+      anims.map((a) =>
+        Animated.timing(a, { toValue: 1, duration: 480, useNativeDriver: false }),
+      ),
+    ).start();
+    // Intentionally empty deps: one-shot animation on mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <View style={styles.row}>
       <Text style={styles.rowTitle}>{title}</Text>
-      {entries.map(([key, count]) => {
+      {entries.map(([key, count], i) => {
         const pct = count / total;
         const barColor = colorMap?.[key] ?? '#4F46E5';
+        const anim = anims[i]!;
         return (
           <View key={key} style={styles.barRow}>
             <Text style={styles.barLabel} numberOfLines={1}>
               {label(labelMap, key)}
             </Text>
             <View style={styles.barTrack}>
-              <View style={[styles.barFill, { flex: pct, backgroundColor: barColor }]} />
-              <View style={[styles.barRemainder, { flex: 1 - pct }]} />
+              <Animated.View
+                style={[
+                  styles.barFill,
+                  {
+                    flex: anim.interpolate({ inputRange: [0, 1], outputRange: [0, pct] }),
+                    backgroundColor: barColor,
+                  },
+                ]}
+              />
+              <Animated.View
+                style={[
+                  styles.barRemainder,
+                  { flex: anim.interpolate({ inputRange: [0, 1], outputRange: [1, 1 - pct] }) },
+                ]}
+              />
             </View>
             <Text style={styles.barCount}>{count}</Text>
           </View>

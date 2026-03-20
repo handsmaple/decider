@@ -28,22 +28,28 @@ if (Platform.OS === 'android') {
 
 interface Props {
   event: PersonaEvent;
+  /** Card's position in the list — used to stagger the entrance animation. */
+  index: number;
 }
 
-export function PersonaCard({ event }: Props) {
+export function PersonaCard({ event, index }: Props) {
   const { persona, dimensions, response } = event;
   const [expanded, setExpanded] = useState(false);
 
-  // Fade + slide up on mount
+  // Fade + slide up on mount, staggered by position (capped so later cards don't wait too long)
   const opacity = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(14)).current;
 
   useEffect(() => {
-    Animated.parallel([
-      Animated.timing(opacity, { toValue: 1, duration: 380, useNativeDriver: true }),
-      Animated.timing(translateY, { toValue: 0, duration: 380, useNativeDriver: true }),
-    ]).start();
-  }, [opacity, translateY]);
+    const delay = Math.min(index * 80, 400);
+    const timeout = setTimeout(() => {
+      Animated.parallel([
+        Animated.timing(opacity, { toValue: 1, duration: 360, useNativeDriver: true }),
+        Animated.timing(translateY, { toValue: 0, duration: 360, useNativeDriver: true }),
+      ]).start();
+    }, delay);
+    return () => clearTimeout(timeout);
+  }, [opacity, translateY, index]);
 
   function toggleExpanded() {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
