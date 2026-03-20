@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#1e1e1e',
   },
   barFill: {
-    borderRadius: 3,
+    // No borderRadius here — barTrack's overflow:hidden + borderRadius clips cleanly
   },
   barRemainder: {
     // transparent fill to occupy remaining space

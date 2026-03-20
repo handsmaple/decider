@@ -101,6 +101,8 @@ export function useDeliberate() {
     }
 
     xhr.onreadystatechange = () => {
+      // Guard: bail if this XHR has been superseded by a new request or reset
+      if (xhrRef.current !== xhr) return;
       // LOADING (3) fires on each chunk; DONE (4) fires at end
       if (xhr.readyState === 3 || xhr.readyState === 4) {
         const chunk = xhr.responseText.slice(cursor);
@@ -110,6 +112,7 @@ export function useDeliberate() {
     };
 
     xhr.onerror = () => {
+      if (xhrRef.current !== xhr) return;
       setState((s) => ({ ...s, status: 'error', error: 'Network error — is the Decider server running?' }));
     };
 
@@ -120,6 +123,7 @@ export function useDeliberate() {
 
   const reset = useCallback(() => {
     xhrRef.current?.abort();
+    xhrRef.current = null; // ensures stale onreadystatechange guards bail out
     setState(INITIAL);
   }, []);
 
