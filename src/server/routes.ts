@@ -20,7 +20,7 @@ function readBody(req: IncomingMessage): Promise<string> {
  *   { question: string, options?: DeliberationOptions }
  *
  * Response: text/event-stream (SSE)
- *   data: {"type":"persona","persona":"Label","response":"...","inputTokens":N,"outputTokens":N}
+ *   data: {"type":"persona","persona":"Label","dimensions":{...},"response":"...","inputTokens":N,"outputTokens":N}
  *   data: {"type":"failed","persona":"Label","error":"..."}
  *   data: {"type":"synthesis","text":"..."}
  *   data: {"type":"done","durationMs":N,"totalResponses":N,"totalFailed":N}
@@ -72,6 +72,7 @@ export async function handleDeliberate(req: IncomingMessage, res: ServerResponse
           send({
             type: 'persona',
             persona: r.persona.label,
+            dimensions: r.persona.dimensions,
             response: r.response,
             inputTokens: r.inputTokens,
             outputTokens: r.outputTokens,
