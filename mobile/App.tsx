@@ -1,5 +1,4 @@
-import { useRef, useEffect } from 'react';
-import { useState } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -15,6 +14,8 @@ import { StatusBar } from 'expo-status-bar';
 import { useDeliberate } from './src/hooks/useDeliberate';
 import { PersonaCard } from './src/components/PersonaCard';
 import { ParliamentBar } from './src/components/ParliamentBar';
+import { LoadingDots } from './src/components/LoadingDots';
+import { DimensionBreakdown } from './src/components/DimensionBreakdown';
 
 export default function App() {
   const [question, setQuestion] = useState('');
@@ -22,10 +23,11 @@ export default function App() {
   const scrollRef = useRef<ScrollView>(null);
   const isLoading = state.status === 'loading';
 
-  // Auto-scroll as responses stream in
+  // Auto-scroll as personas stream in and when synthesis arrives
   useEffect(() => {
     if (state.personas.length > 0 || state.synthesis) {
-      scrollRef.current?.scrollToEnd({ animated: true });
+      // Small delay lets LayoutAnimation finish before we measure
+      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50);
     }
   }, [state.personas.length, state.synthesis]);
 
@@ -48,21 +50,22 @@ export default function App() {
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
         >
+          {/* Header */}
           <Text style={styles.title}>Decider</Text>
           <Text style={styles.subtitle}>
             Ask a question. A diverse panel of AI personas deliberates.
           </Text>
 
+          {/* Input */}
           <TextInput
             style={[styles.input, isLoading && styles.inputDisabled]}
             value={question}
             onChangeText={setQuestion}
             placeholder="Should cities ban cars from downtown?"
-            placeholderTextColor="#555"
+            placeholderTextColor="#444"
             editable={!isLoading}
             returnKeyType="send"
             onSubmitEditing={handleAsk}
-            multiline={false}
           />
 
           <View style={styles.buttonRow}>
@@ -76,28 +79,31 @@ export default function App() {
             </TouchableOpacity>
 
             {state.status !== 'idle' && (
-              <TouchableOpacity
-                style={styles.resetButton}
-                onPress={reset}
-                activeOpacity={0.8}
-              >
+              <TouchableOpacity style={styles.resetButton} onPress={reset} activeOpacity={0.8}>
                 <Text style={styles.resetButtonText}>Reset</Text>
               </TouchableOpacity>
             )}
           </View>
 
+          {/* Error */}
           {state.error && (
             <View style={styles.errorBox}>
               <Text style={styles.errorText}>{state.error}</Text>
             </View>
           )}
 
+          {/* Parliament bar — grows as personas arrive */}
           <ParliamentBar personas={state.personas} />
 
+          {/* Persona cards — animate in one by one */}
           {state.personas.map((p) => (
             <PersonaCard key={p.persona} event={p} />
           ))}
 
+          {/* Loading indicator */}
+          {isLoading && <LoadingDots count={state.personas.length} />}
+
+          {/* Synthesis */}
           {state.synthesis && (
             <View style={styles.synthesisCard}>
               <Text style={styles.synthesisLabel}>SYNTHESIS</Text>
@@ -105,6 +111,12 @@ export default function App() {
             </View>
           )}
 
+          {/* Panel breakdown — shown after deliberation completes */}
+          {state.status === 'done' && (
+            <DimensionBreakdown personas={state.personas} />
+          )}
+
+          {/* Stats footer */}
           {state.status === 'done' && state.durationMs !== null && (
             <Text style={styles.stats}>
               {state.personas.length} responses · {state.failed.length} failed ·{' '}
@@ -120,7 +132,7 @@ export default function App() {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: '#0f0f0f',
+    backgroundColor: '#0a0a0a',
   },
   flex: { flex: 1 },
   scroll: { flex: 1 },
@@ -137,18 +149,18 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 14,
-    color: '#888',
+    color: '#666',
     lineHeight: 20,
     marginBottom: 28,
   },
   input: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#141414',
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: '#2a2a2a',
     borderRadius: 8,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    fontSize: 14,
+    fontSize: 15,
     color: '#e5e5e5',
     marginBottom: 10,
   },
@@ -164,28 +176,28 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#4F46E5',
     borderRadius: 8,
-    paddingVertical: 12,
+    paddingVertical: 13,
     alignItems: 'center',
   },
   buttonDisabled: {
-    backgroundColor: '#333',
+    backgroundColor: '#252525',
   },
   askButtonText: {
     color: '#fff',
     fontWeight: '600',
-    fontSize: 14,
+    fontSize: 15,
   },
   resetButton: {
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: '#2a2a2a',
     borderRadius: 8,
     paddingHorizontal: 18,
-    paddingVertical: 12,
+    paddingVertical: 13,
     alignItems: 'center',
     justifyContent: 'center',
   },
   resetButtonText: {
-    color: '#888',
+    color: '#666',
     fontSize: 14,
   },
   errorBox: {
@@ -200,11 +212,12 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   synthesisCard: {
-    backgroundColor: '#0f172a',
+    backgroundColor: '#0a1628',
     borderRadius: 8,
     borderLeftWidth: 3,
     borderLeftColor: '#38BDF8',
     padding: 16,
+    marginTop: 4,
     marginBottom: 8,
   },
   synthesisLabel: {
@@ -222,7 +235,7 @@ const styles = StyleSheet.create({
   stats: {
     marginTop: 12,
     fontSize: 12,
-    color: '#555',
+    color: '#444',
     textAlign: 'right',
   },
 });

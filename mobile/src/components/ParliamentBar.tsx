@@ -1,26 +1,6 @@
 import { View, Text, StyleSheet } from 'react-native';
+import { worldviewColor } from '../constants';
 import type { PersonaEvent } from '../hooks/useDeliberate';
-
-// Rough heuristic mapping worldview strings to recognisable colours.
-// Falls back to grey for anything unmapped.
-const WORLDVIEW_COLORS: Record<string, string> = {
-  conservative: '#ef4444',
-  liberal: '#3b82f6',
-  libertarian: '#f59e0b',
-  socialist: '#ec4899',
-  religious: '#8b5cf6',
-  secular: '#14b8a6',
-  traditional: '#a16207',
-  progressive: '#22c55e',
-};
-
-function colorFor(worldview: string): string {
-  const lower = worldview.toLowerCase();
-  for (const [key, color] of Object.entries(WORLDVIEW_COLORS)) {
-    if (lower.includes(key)) return color;
-  }
-  return '#6b7280';
-}
 
 interface Props {
   personas: PersonaEvent[];
@@ -35,7 +15,7 @@ export function ParliamentBar({ personas }: Props) {
         {personas.map((p) => (
           <View
             key={p.persona}
-            style={[styles.segment, { backgroundColor: colorFor(p.dimensions.worldview) }]}
+            style={[styles.segment, { backgroundColor: worldviewColor(p.dimensions.worldview) }]}
           />
         ))}
       </View>
