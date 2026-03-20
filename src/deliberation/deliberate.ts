@@ -61,6 +61,11 @@ export interface DeliberationOptions {
    * Set to false to skip the extra API call and return raw responses only.
    */
   includeSynthesis?: boolean;
+  /**
+   * Max tokens for the synthesis response (default: 300).
+   * Increase if the 3-bullet synthesis is getting cut off; decrease to save cost.
+   */
+  maxTokensSynthesis?: number;
 }
 
 // ── Core ───────────────────────────────────────────────────────────
@@ -97,6 +102,7 @@ export async function deliberate(
   const {
     panelSize = 5,
     maxTokensPerPersona = 256,
+    maxTokensSynthesis = 300,
     model = DEFAULT_MODEL,
     timeoutMs,
     seed,
@@ -128,7 +134,7 @@ export async function deliberate(
 
   const synthesis =
     includeSynthesis && responses.length >= 2
-      ? await synthesize(question, responses, cfg)
+      ? await synthesize(question, responses, maxTokensSynthesis, cfg)
       : null;
 
   return {
@@ -160,6 +166,7 @@ export async function deliberateStream(
   const {
     panelSize = 5,
     maxTokensPerPersona = 256,
+    maxTokensSynthesis = 300,
     model = DEFAULT_MODEL,
     timeoutMs,
     seed,
@@ -206,7 +213,7 @@ export async function deliberateStream(
 
   const synthesis =
     includeSynthesis && responses.length >= 2
-      ? await synthesize(question, responses, cfg)
+      ? await synthesize(question, responses, maxTokensSynthesis, cfg)
       : null;
 
   return {
@@ -263,6 +270,7 @@ async function callPersona(
 async function synthesize(
   question: string,
   responses: PersonaResponse[],
+  maxTokens: number,
   { model, timeoutMs }: ApiCallConfig,
 ): Promise<string | null> {
   const panel = responses
@@ -272,7 +280,7 @@ async function synthesize(
   const message = await client.messages.create(
     {
       model,
-      max_tokens: 300,
+      max_tokens: maxTokens,
       system:
         'You are a neutral analyst synthesizing a diverse panel of perspectives. Be specific, direct, and reference the actual views expressed. No hedging.',
       messages: [

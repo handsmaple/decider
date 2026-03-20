@@ -78,8 +78,8 @@ Landing page, question input, subscription tier enforcement
 Responsive layout, transitions, tier upgrade modal (mobile: screen fade transition, error retry flow, Android keyboard fix, live navbar response count)
 
 ## V1.5 Backlog (post-MVP)
-- Expose `maxTokensSynthesis` as a `DeliberationOptions` field
-- Remove `buildPersonaPrompt` from public API surface
+- ~~Expose `maxTokensSynthesis` as a `DeliberationOptions` field~~ ✅
+- ~~Remove `buildPersonaPrompt` from public API surface~~ ✅
 - Persona customization for high-tier subscribers
 - Theme clustering on the results page
 - Caching / persistence layer for repeated questions
