@@ -114,7 +114,12 @@ export default function App() {
     <div>
       {/* ── Header ─────────────────────────────────────────────────── */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: isIdle ? '56px' : '24px' }}>
-        <span style={{ fontSize: '16px', fontWeight: 700, letterSpacing: '-0.02em' }}>Decider</span>
+        <button
+          onClick={handleReset}
+          style={{ fontSize: '16px', fontWeight: 700, letterSpacing: '-0.02em', background: 'none', border: 'none', color: 'inherit', cursor: isIdle ? 'default' : 'pointer', padding: 0 }}
+        >
+          Decider
+        </button>
         <TierBadge tier={tier} onUpgradeClick={() => setShowUpgrade(true)} />
       </div>
 
