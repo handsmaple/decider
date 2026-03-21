@@ -1,6 +1,7 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { deliberateStream } from '../deliberation/index.js';
 import type { DeliberationOptions } from '../deliberation/index.js';
+import { sanitizeQuestion } from '../deliberation/sanitize.js';
 import type { DeliberationCache } from '../cache/index.js';
 import { openSseStream } from './sse.js';
 
@@ -85,9 +86,18 @@ export async function handleDeliberate(
     seed: opts.seed,
   };
 
+  // Run bias check before opening the stream — heuristic is sync; Claude fallback
+  // only fires for borderline questions and fails open on error.
+  const sanitizeResult = await sanitizeQuestion(question.trim());
+
   const { send, close } = openSseStream(res);
 
   try {
+    // ── Bias warning (non-blocking) ──────────────────────────────────
+    if (sanitizeResult.biased) {
+      send({ type: 'bias_warning', reason: sanitizeResult.reason, score: sanitizeResult.score });
+    }
+
     // ── Cache hit: replay stored result immediately ──────────────────
     const cached = cache?.get(cacheKey);
     if (cached) {
