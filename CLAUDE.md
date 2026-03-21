@@ -71,7 +71,7 @@ Animated reveal of persona responses + chart breakdown (mobile: staggered Person
 ### Phase 5 — Stats + Drawer ✅
 Summary stats panel and expandable persona detail drawer (mobile: PersonaCard expand/collapse + stats footer)
 
-### Phase 6 — Home Page + Tier Gating ⬜
+### Phase 6 — Home Page + Tier Gating ✅
 Landing page, question input, subscription tier enforcement
 
 ### Phase 7 — Polish + Mobile ✅

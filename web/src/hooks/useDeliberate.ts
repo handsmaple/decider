@@ -67,13 +67,21 @@ const INITIAL: DeliberationState = {
   error: null,
 };
 
+// ── Call options (subset of server-side DeliberationOptions) ────────
+
+export interface DeliberateCallOptions {
+  panelSize?: number;
+  seed?: number;
+  includeSynthesis?: boolean;
+}
+
 // ── Hook ────────────────────────────────────────────────────────────
 
 export function useDeliberate() {
   const [state, setState] = useState<DeliberationState>(INITIAL);
   const abortRef = useRef<AbortController | null>(null);
 
-  const deliberate = useCallback((question: string) => {
+  const deliberate = useCallback((question: string, options?: DeliberateCallOptions) => {
     // Cancel any in-flight request
     abortRef.current?.abort();
     const controller = new AbortController();
@@ -86,7 +94,7 @@ export function useDeliberate() {
         const res = await fetch('/deliberate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ question }),
+          body: JSON.stringify({ question, options }),
           signal: controller.signal,
         });
 
