@@ -86,18 +86,27 @@ function selectWithDiversity(shuffled: readonly Persona[], panelSize: number): P
  * Pass a custom `seed` to re-roll the panel for the same question (e.g., to
  * explore different perspectives or for A/B testing).
  *
+ * Pass a custom `pool` to select from a subset of personas — e.g. after
+ * required personas have already been reserved.
+ *
  * @param question - The question being deliberated
  * @param panelSize - Number of personas to select (default 5)
  * @param seed - Optional seed override; defaults to FNV-1a hash of the question
+ * @param pool - Optional persona pool to draw from; defaults to all 50 PERSONAS
  */
-export function selectPanel(question: string, panelSize = 5, seed?: number): Persona[] {
-  if (panelSize < 1 || panelSize > PERSONAS.length) {
+export function selectPanel(
+  question: string,
+  panelSize = 5,
+  seed?: number,
+  pool: readonly Persona[] = PERSONAS,
+): Persona[] {
+  if (panelSize < 1 || panelSize > pool.length) {
     throw new RangeError(
-      `panelSize must be between 1 and ${PERSONAS.length}, got ${panelSize}`,
+      `panelSize must be between 1 and ${pool.length}, got ${panelSize}`,
     );
   }
   const effectiveSeed = seed ?? hashQuestion(question.trim().toLowerCase());
   const rand = mulberry32(effectiveSeed);
-  const shuffled = seededShuffle(PERSONAS, rand);
+  const shuffled = seededShuffle(pool, rand);
   return selectWithDiversity(shuffled, panelSize);
 }

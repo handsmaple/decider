@@ -10,6 +10,7 @@ import assert from 'node:assert/strict';
 
 import { PERSONAS, WORLDVIEWS } from '../personas/index.js';
 import { hashQuestion, mulberry32, seededShuffle, selectPanel } from './select.js';
+import { deliberate } from './deliberate.js';
 
 // ── hashQuestion (FNV-1a 32-bit) ───────────────────────────────────
 
@@ -221,5 +222,58 @@ describe('selectPanel', () => {
   it('accepts panelSize === total personas (edge case)', () => {
     const panel = selectPanel(question, PERSONAS.length);
     assert.equal(panel.length, PERSONAS.length);
+  });
+
+  it('accepts a custom pool smaller than PERSONAS', () => {
+    const smallPool = PERSONAS.slice(0, 10);
+    const panel = selectPanel(question, 3, undefined, smallPool);
+    assert.equal(panel.length, 3);
+    // All selected personas come from the small pool
+    for (const p of panel) {
+      assert.ok(smallPool.some((q) => q.id === p.id));
+    }
+  });
+
+  it('throws RangeError when panelSize exceeds custom pool size', () => {
+    const smallPool = PERSONAS.slice(0, 3);
+    assert.throws(() => selectPanel(question, 5, undefined, smallPool), RangeError);
+  });
+});
+
+// ── persona customization (deliberate options) ────────────────────────
+
+describe('persona customization via deliberate options', () => {
+  it('throws RangeError for unknown requiredPersonaId', async () => {
+    await assert.rejects(
+      () => deliberate('Q?', { panelSize: 3, requiredPersonaIds: ['p99-nonexistent'] }),
+      RangeError,
+    );
+  });
+
+  it('throws RangeError when customPersonas exceed panelSize', async () => {
+    await assert.rejects(
+      () =>
+        deliberate('Q?', {
+          panelSize: 2,
+          customPersonas: [
+            { label: 'A' },
+            { label: 'B' },
+            { label: 'C' }, // 3 customs > panelSize 2
+          ],
+        }),
+      RangeError,
+    );
+  });
+
+  it('throws RangeError when requiredPersonaIds + customPersonas exceed panelSize', async () => {
+    await assert.rejects(
+      () =>
+        deliberate('Q?', {
+          panelSize: 2,
+          requiredPersonaIds: ['p01', 'p02'],
+          customPersonas: [{ label: 'Extra' }], // 3 forced > panelSize 2
+        }),
+      RangeError,
+    );
   });
 });

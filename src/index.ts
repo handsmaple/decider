@@ -2,7 +2,7 @@
 // Import from 'decider/src' (or configure package.json exports) to get a stable surface.
 
 export { deliberate, deliberateStream, selectPanel, DEFAULT_MODEL, clusterThemes } from './deliberation/index.js';
-export type { DeliberationResult, DeliberationOptions, PersonaResponse, FailedPersona, StreamCallbacks, ThemeCluster } from './deliberation/index.js';
+export type { DeliberationResult, DeliberationOptions, PersonaResponse, FailedPersona, StreamCallbacks, ThemeCluster, CustomPersona } from './deliberation/index.js';
 
 export { PERSONAS, DIMENSION_LABELS } from './personas/index.js';
 export type {

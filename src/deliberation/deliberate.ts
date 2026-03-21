@@ -1,9 +1,24 @@
 import Anthropic from '@anthropic-ai/sdk';
-import type { Persona } from '../personas/index.js';
+import { PERSONAS } from '../personas/index.js';
+import type { Persona, PersonaDimensions } from '../personas/index.js';
 import { selectPanel } from './select.js';
 import { buildPersonaPrompt } from './prompt.js';
 import { clusterThemes } from './cluster.js';
 export type { ThemeCluster } from './cluster.js';
+
+// ── Custom persona type ────────────────────────────────────────────
+
+/**
+ * A caller-defined persona to inject into the panel.
+ * Unspecified dimensions fall back to sensible defaults so callers only
+ * need to specify what they care about.
+ */
+export interface CustomPersona {
+  /** Display label shown in results, e.g. "A retired teacher from Ohio" */
+  label: string;
+  /** Dimension overrides — any omitted fields use the default values */
+  dimensions?: Partial<PersonaDimensions>;
+}
 
 // ── Constants ──────────────────────────────────────────────────────
 
@@ -78,6 +93,18 @@ export interface DeliberationOptions {
    * Adds one extra API call after synthesis. Result is available in `clusters`.
    */
   includeThemeClusters?: boolean;
+  /**
+   * Personas from the built-in pool to force into the panel (by ID, e.g. "p01").
+   * These are placed at the front of the panel; remaining slots are filled
+   * from the pool as normal. Throws if any ID is unknown.
+   */
+  requiredPersonaIds?: string[];
+  /**
+   * Caller-defined personas to inject into the panel (high-tier feature).
+   * Custom personas take the first slots; built-in pool fills the rest.
+   * Each custom persona only needs a label — omitted dimensions use defaults.
+   */
+  customPersonas?: CustomPersona[];
 }
 
 // ── Core ───────────────────────────────────────────────────────────
@@ -120,10 +147,12 @@ export async function deliberate(
     seed,
     includeSynthesis = true,
     includeThemeClusters = false,
+    customPersonas,
+    requiredPersonaIds,
   } = options;
 
   const start = performance.now();
-  const panel = selectPanel(question, panelSize, seed);
+  const panel = buildPanel(question, panelSize, seed, customPersonas, requiredPersonaIds);
   const cfg: ApiCallConfig = { model, timeoutMs };
 
   // Fan out — all persona calls run in parallel; partial failures are tolerated
@@ -190,10 +219,12 @@ export async function deliberateStream(
     seed,
     includeSynthesis = true,
     includeThemeClusters = false,
+    customPersonas,
+    requiredPersonaIds,
   } = options;
 
   const start = performance.now();
-  const panel = selectPanel(question, panelSize, seed);
+  const panel = buildPanel(question, panelSize, seed, customPersonas, requiredPersonaIds);
   const cfg: ApiCallConfig = { model, timeoutMs };
 
   // Attach callbacks to each promise so results stream out as they settle
@@ -247,6 +278,80 @@ export async function deliberateStream(
     clusters,
     durationMs: Math.round(performance.now() - start),
   };
+}
+
+// ── Panel builder (handles custom + required personas) ─────────────
+
+/** Default dimension values used when a custom persona omits a field. */
+const DEFAULT_DIMENSIONS: PersonaDimensions = {
+  age: 'adult',
+  geography: 'north_american',
+  worldview: 'centrist',
+  job: 'corporate_professional',
+  education: 'bachelors',
+  interests: ['technology'],
+};
+
+/**
+ * Build the persona panel respecting any caller-supplied overrides.
+ *
+ * Order of precedence (front to back):
+ *   1. Custom personas (caller-defined, synthetic IDs)
+ *   2. Required built-in personas (pinned by ID)
+ *   3. Pool-selected personas (deterministic shuffle of remaining pool)
+ */
+function buildPanel(
+  question: string,
+  panelSize: number,
+  seed: number | undefined,
+  customPersonas: CustomPersona[] | undefined,
+  requiredPersonaIds: string[] | undefined,
+): Persona[] {
+  if (panelSize < 1 || panelSize > PERSONAS.length) {
+    throw new RangeError(`panelSize must be between 1 and ${PERSONAS.length}, got ${panelSize}`);
+  }
+
+  const forced: Persona[] = [];
+
+  // 1. Inject custom personas
+  if (customPersonas?.length) {
+    for (let i = 0; i < customPersonas.length; i++) {
+      const cp = customPersonas[i]!;
+      forced.push({
+        id: `custom-${i}`,
+        label: cp.label,
+        dimensions: { ...DEFAULT_DIMENSIONS, ...cp.dimensions } as PersonaDimensions,
+      });
+    }
+  }
+
+  // 2. Pin required built-in personas
+  if (requiredPersonaIds?.length) {
+    const forcedIds = new Set(forced.map((p) => p.id));
+    for (const id of requiredPersonaIds) {
+      if (forcedIds.has(id)) continue; // de-duplicate
+      const p = PERSONAS.find((p) => p.id === id);
+      if (!p) throw new RangeError(`Unknown persona ID: "${id}"`);
+      forced.push(p);
+      forcedIds.add(id);
+    }
+  }
+
+  if (forced.length > panelSize) {
+    throw new RangeError(
+      `customPersonas + requiredPersonaIds (${forced.length}) exceeds panelSize (${panelSize})`,
+    );
+  }
+
+  // 3. Fill remaining slots from pool (excluding already-forced IDs)
+  const remaining = panelSize - forced.length;
+  if (remaining === 0) return forced;
+
+  const forcedIds = new Set(forced.map((p) => p.id));
+  const filteredPool = PERSONAS.filter((p) => !forcedIds.has(p.id));
+  const poolPanel = selectPanel(question, remaining, seed, filteredPool);
+
+  return [...forced, ...poolPanel];
 }
 
 // ── Internal ───────────────────────────────────────────────────────
