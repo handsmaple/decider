@@ -3,11 +3,22 @@ import { deliberateStream } from '../deliberation/index.js';
 import type { DeliberationOptions } from '../deliberation/index.js';
 import { openSseStream } from './sse.js';
 
-/** Read the full request body as a string. */
+const MAX_BODY_BYTES = 1024 * 1024; // 1 MB — a question + options will never approach this
+
+/** Read the full request body as a string, rejecting payloads larger than MAX_BODY_BYTES. */
 function readBody(req: IncomingMessage): Promise<string> {
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
-    req.on('data', (chunk: Buffer) => chunks.push(chunk));
+    let total = 0;
+    req.on('data', (chunk: Buffer) => {
+      total += chunk.byteLength;
+      if (total > MAX_BODY_BYTES) {
+        reject(new Error('Request body too large'));
+        req.destroy();
+        return;
+      }
+      chunks.push(chunk);
+    });
     req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
     req.on('error', reject);
   });

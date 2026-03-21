@@ -25,6 +25,8 @@ import { handleDeliberate } from './routes.js';
 function makeReq(method: string, body: string): IncomingMessage {
   const req = new EventEmitter() as unknown as IncomingMessage;
   (req as unknown as Record<string, unknown>).method = method;
+  // No-op destroy — mirrors the real IncomingMessage.destroy() signature
+  (req as unknown as Record<string, unknown>).destroy = () => req;
   // Emit the body asynchronously, as a real HTTP request would
   setImmediate(() => {
     req.emit('data', Buffer.from(body));
@@ -210,6 +212,17 @@ describe('handleDeliberate', () => {
   it('POST with empty JSON object (no fields) returns 400', async () => {
     const state = makeRes();
     await handleDeliberate(makeReq('POST', '{}'), state.res);
+
+    assert.equal(state.statusCode, 400);
+  });
+
+  // ── Body size limit ───────────────────────────────────────────────────
+
+  it('POST with body exceeding 1 MB returns 400', async () => {
+    // Build a body just over the 1 MB limit
+    const oversized = JSON.stringify({ question: 'x'.repeat(1024 * 1024 + 1) });
+    const state = makeRes();
+    await handleDeliberate(makeReq('POST', oversized), state.res);
 
     assert.equal(state.statusCode, 400);
   });
