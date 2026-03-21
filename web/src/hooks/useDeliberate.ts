@@ -36,6 +36,7 @@ export interface DoneEvent {
   durationMs: number;
   totalResponses: number;
   totalFailed: number;
+  fromCache: boolean;
 }
 
 export interface ErrorEvent {
@@ -43,7 +44,13 @@ export interface ErrorEvent {
   message: string;
 }
 
-type SseEvent = PersonaEvent | FailedEvent | SynthesisEvent | DoneEvent | ErrorEvent;
+export interface BiasWarningEvent {
+  type: 'bias_warning';
+  reason: string;
+  score: number;
+}
+
+type SseEvent = PersonaEvent | FailedEvent | SynthesisEvent | DoneEvent | ErrorEvent | BiasWarningEvent;
 
 // ── State ───────────────────────────────────────────────────────────
 
@@ -55,6 +62,8 @@ export interface DeliberationState {
   failed: FailedEvent[];
   synthesis: string | null;
   durationMs: number | null;
+  fromCache: boolean;
+  biasWarning: { reason: string; score: number } | null;
   error: string | null;
 }
 
@@ -64,6 +73,8 @@ const INITIAL: DeliberationState = {
   failed: [],
   synthesis: null,
   durationMs: null,
+  fromCache: false,
+  biasWarning: null,
   error: null,
 };
 
@@ -161,9 +172,11 @@ function applyEvent(s: DeliberationState, event: SseEvent): DeliberationState {
     case 'synthesis':
       return { ...s, synthesis: event.text };
     case 'done':
-      return { ...s, status: 'done', durationMs: event.durationMs };
+      return { ...s, status: 'done', durationMs: event.durationMs, fromCache: event.fromCache };
     case 'error':
       return { ...s, status: 'error', error: event.message };
+    case 'bias_warning':
+      return { ...s, biasWarning: { reason: event.reason, score: event.score } };
     default:
       return s;
   }

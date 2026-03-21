@@ -179,6 +179,17 @@ export default function App() {
         </>
       )}
 
+      {/* ── Bias warning ────────────────────────────────────────────── */}
+      {state.biasWarning && (
+        <div style={{ marginTop: '16px', padding: '12px 14px', background: '#1c1a0e', border: '1px solid #854d0e', borderRadius: '6px', display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+          <span style={{ fontSize: '15px', lineHeight: 1 }}>⚠</span>
+          <div>
+            <span style={{ fontSize: '13px', fontWeight: 600, color: '#fbbf24' }}>Biased question detected</span>
+            <span style={{ fontSize: '13px', color: '#a16207' }}> · {state.biasWarning.reason}. Results may lean one way.</span>
+          </div>
+        </div>
+      )}
+
       {/* ── Error ──────────────────────────────────────────────────── */}
       {state.error && (
         <div style={{ marginTop: '16px', padding: '12px', background: '#2a1010', borderRadius: '6px', color: '#f87171', fontSize: '14px' }}>
@@ -247,7 +258,10 @@ export default function App() {
           {/* Stats + Re-roll */}
           {state.status === 'done' && state.durationMs !== null && (
             <div style={{ marginTop: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: '#555' }}>
-              <span>{state.personas.length} responses · {state.failed.length} failed · {(state.durationMs / 1000).toFixed(1)}s</span>
+              <span>
+                {state.personas.length} responses · {state.failed.length} failed · {(state.durationMs / 1000).toFixed(1)}s
+                {state.fromCache && <span style={{ marginLeft: '6px', color: '#4b5563' }}>· cached</span>}
+              </span>
               <button
                 onClick={handleReroll}
                 style={{
