@@ -2,6 +2,8 @@ import Anthropic from '@anthropic-ai/sdk';
 import type { Persona } from '../personas/index.js';
 import { selectPanel } from './select.js';
 import { buildPersonaPrompt } from './prompt.js';
+import { clusterThemes } from './cluster.js';
+export type { ThemeCluster } from './cluster.js';
 
 // ── Constants ──────────────────────────────────────────────────────
 
@@ -35,6 +37,11 @@ export interface DeliberationResult {
    * Null if includeSynthesis is false.
    */
   synthesis: string | null;
+  /**
+   * Theme clusters grouping personas by their primary position.
+   * Undefined unless includeThemeClusters is true.
+   */
+  clusters?: import('./cluster.js').ThemeCluster[];
   /** Wall-clock duration covering panel selection + all parallel API calls + synthesis, in milliseconds */
   durationMs: number;
 }
@@ -66,6 +73,11 @@ export interface DeliberationOptions {
    * Increase if the 3-bullet synthesis is getting cut off; decrease to save cost.
    */
   maxTokensSynthesis?: number;
+  /**
+   * Whether to group persona responses into named theme clusters (default: false).
+   * Adds one extra API call after synthesis. Result is available in `clusters`.
+   */
+  includeThemeClusters?: boolean;
 }
 
 // ── Core ───────────────────────────────────────────────────────────
@@ -107,6 +119,7 @@ export async function deliberate(
     timeoutMs,
     seed,
     includeSynthesis = true,
+    includeThemeClusters = false,
   } = options;
 
   const start = performance.now();
@@ -137,11 +150,16 @@ export async function deliberate(
       ? await synthesize(question, responses, maxTokensSynthesis, cfg)
       : null;
 
+  const clusters = includeThemeClusters && responses.length >= 2
+    ? await clusterThemes(question, responses, { model, timeoutMs }).catch(() => [])
+    : undefined;
+
   return {
     question,
     responses,
     failed,
     synthesis,
+    clusters,
     durationMs: Math.round(performance.now() - start),
   };
 }
@@ -171,6 +189,7 @@ export async function deliberateStream(
     timeoutMs,
     seed,
     includeSynthesis = true,
+    includeThemeClusters = false,
   } = options;
 
   const start = performance.now();
@@ -216,11 +235,16 @@ export async function deliberateStream(
       ? await synthesize(question, responses, maxTokensSynthesis, cfg)
       : null;
 
+  const clusters = includeThemeClusters && responses.length >= 2
+    ? await clusterThemes(question, responses, { model, timeoutMs }).catch(() => [])
+    : undefined;
+
   return {
     question,
     responses,
     failed,
     synthesis,
+    clusters,
     durationMs: Math.round(performance.now() - start),
   };
 }

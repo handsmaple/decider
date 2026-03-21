@@ -107,6 +107,9 @@ export async function handleDeliberate(
       if (cached.synthesis) {
         send({ type: 'synthesis', text: cached.synthesis });
       }
+      if (cached.clusters && cached.clusters.length > 0) {
+        send({ type: 'clusters', clusters: cached.clusters });
+      }
       send({
         type: 'done',
         durationMs: cached.durationMs,
@@ -140,6 +143,10 @@ export async function handleDeliberate(
 
     if (result.synthesis) {
       send({ type: 'synthesis', text: result.synthesis });
+    }
+
+    if (result.clusters && result.clusters.length > 0) {
+      send({ type: 'clusters', clusters: result.clusters });
     }
 
     send({
