@@ -6,7 +6,8 @@
     "build": "tsc",
     "typecheck": "tsc --noEmit",
     "deliberate": "npx tsx src/deliberation/demo.ts",
-    "server": "npx tsx src/server/index.ts"
+    "server": "npx tsx src/server/index.ts",
+    "test": "npx tsx --test src/**/*.test.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.54.0"

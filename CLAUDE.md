@@ -83,4 +83,4 @@ Responsive layout, transitions, tier upgrade modal (mobile: screen fade transiti
 - Persona customization for high-tier subscribers
 - Theme clustering on the results page
 - Caching / persistence layer for repeated questions
-- Test suite (unit tests for panel selection, hash, shuffle)
+- ~~Test suite (unit tests for panel selection, hash, shuffle)~~ ✅

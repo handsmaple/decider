@@ -3,8 +3,10 @@ import { PERSONAS, WORLDVIEWS, type Persona } from '../personas/index.js';
 /**
  * Deterministic pseudo-random number generator (mulberry32).
  * Same seed always produces the same sequence.
+ *
+ * @internal — exported for testing only; not part of the public API.
  */
-function mulberry32(seed: number): () => number {
+export function mulberry32(seed: number): () => number {
   return function () {
     seed |= 0;
     seed = (seed + 0x6d2b79f5) | 0;
@@ -17,8 +19,10 @@ function mulberry32(seed: number): () => number {
 /**
  * FNV-1a 32-bit hash of a string.
  * Used to derive a stable seed from the question text.
+ *
+ * @internal — exported for testing only; not part of the public API.
  */
-function hashQuestion(question: string): number {
+export function hashQuestion(question: string): number {
   let hash = 2166136261;
   for (let i = 0; i < question.length; i++) {
     hash ^= question.charCodeAt(i);
@@ -30,8 +34,10 @@ function hashQuestion(question: string): number {
 /**
  * Fisher-Yates shuffle using a seeded PRNG.
  * Returns a new array — does not mutate the input.
+ *
+ * @internal — exported for testing only; not part of the public API.
  */
-function seededShuffle<T>(arr: readonly T[], rand: () => number): T[] {
+export function seededShuffle<T>(arr: readonly T[], rand: () => number): T[] {
   const result = [...arr];
   for (let i = result.length - 1; i > 0; i--) {
     const j = Math.floor(rand() * (i + 1));
@@ -65,7 +71,7 @@ function selectWithDiversity(shuffled: readonly Persona[], panelSize: number): P
     } else {
       overflow.push(persona);
     }
-    if (priority.length + overflow.length >= panelSize) break;
+    if (priority.length >= targetWorldviews && priority.length + overflow.length >= panelSize) break;
   }
 
   return [...priority, ...overflow].slice(0, panelSize);
