@@ -1,6 +1,7 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { deliberateStream } from '../deliberation/index.js';
 import type { DeliberationOptions } from '../deliberation/index.js';
+import type { DeliberationCache } from '../cache/index.js';
 import { openSseStream } from './sse.js';
 
 const MAX_BODY_BYTES = 1024 * 1024; // 1 MB — a question + options will never approach this
@@ -37,7 +38,11 @@ function readBody(req: IncomingMessage): Promise<string> {
  *   data: {"type":"done","durationMs":N,"totalResponses":N,"totalFailed":N}
  *   data: {"type":"error","message":"..."}   ← only on bad requests or uncaught throws
  */
-export async function handleDeliberate(req: IncomingMessage, res: ServerResponse): Promise<void> {
+export async function handleDeliberate(
+  req: IncomingMessage,
+  res: ServerResponse,
+  cache?: DeliberationCache,
+): Promise<void> {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     res.writeHead(204, {
@@ -73,9 +78,46 @@ export async function handleDeliberate(req: IncomingMessage, res: ServerResponse
     return;
   }
 
+  const opts = (options as DeliberationOptions | undefined) ?? {};
+  const cacheKey = {
+    question: question.trim(),
+    panelSize: opts.panelSize,
+    seed: opts.seed,
+  };
+
   const { send, close } = openSseStream(res);
 
   try {
+    // ── Cache hit: replay stored result immediately ──────────────────
+    const cached = cache?.get(cacheKey);
+    if (cached) {
+      for (const r of cached.responses) {
+        send({
+          type: 'persona',
+          persona: r.persona.label,
+          dimensions: r.persona.dimensions,
+          response: r.response,
+          inputTokens: r.inputTokens,
+          outputTokens: r.outputTokens,
+        });
+      }
+      for (const f of cached.failed) {
+        send({ type: 'failed', persona: f.persona.label, error: f.error });
+      }
+      if (cached.synthesis) {
+        send({ type: 'synthesis', text: cached.synthesis });
+      }
+      send({
+        type: 'done',
+        durationMs: cached.durationMs,
+        totalResponses: cached.responses.length,
+        totalFailed: cached.failed.length,
+        fromCache: true,
+      });
+      return;
+    }
+
+    // ── Cache miss: run deliberation, then store ─────────────────────
     const result = await deliberateStream(
       question.trim(),
       {
@@ -93,7 +135,7 @@ export async function handleDeliberate(req: IncomingMessage, res: ServerResponse
           send({ type: 'failed', persona: f.persona.label, error: f.error });
         },
       },
-      (options as DeliberationOptions | undefined) ?? {},
+      opts,
     );
 
     if (result.synthesis) {
@@ -105,7 +147,16 @@ export async function handleDeliberate(req: IncomingMessage, res: ServerResponse
       durationMs: result.durationMs,
       totalResponses: result.responses.length,
       totalFailed: result.failed.length,
+      fromCache: false,
     });
+
+    // Store and persist asynchronously — don't block the response
+    if (cache) {
+      cache.set(cacheKey, result);
+      cache.persist().catch((err: unknown) => {
+        console.error('Cache persist failed:', err);
+      });
+    }
   } catch (err) {
     send({
       type: 'error',

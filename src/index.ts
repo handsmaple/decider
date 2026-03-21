@@ -15,3 +15,6 @@ export type {
   JobStatus,
   EducationLevel,
 } from './personas/index.js';
+
+export { DeliberationCache } from './cache/index.js';
+export type { CacheOptions, CacheKey } from './cache/index.js';
